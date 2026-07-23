@@ -1,0 +1,213 @@
+name: CI
+
+# Gates every change. The eval suite is a required job, not an optional one: if the
+# scoring engine drifts, the build fails. That is the point of Chunk 9's harness.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+
+jobs:
+  # ── The framework corpus is data, but it is the product's source of truth. It gets
+  # validated like code: schema + referential integrity before anything else runs.
+  corpus:
+    name: Framework corpus
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install validator dependencies
+        run: pip install jsonschema
+      - name: Validate schemas and referential integrity
+        run: python frameworks/validate.py
+
+  mcp-server:
+    name: MCP server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: mcp-server/requirements.txt
+      - name: Install dependencies
+        working-directory: mcp-server
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio ruff
+      - name: Lint
+        working-directory: mcp-server
+        run: ruff check app
+      - name: Test
+        working-directory: mcp-server
+        run: pytest -q
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      # WeasyPrint renders reports in-process and needs cairo/pango natively.
+      # Mirrors docker/backend.Dockerfile — keep the two in sync.
+      - name: Install WeasyPrint native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 shared-mime-info
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx ruff
+      - name: Lint
+        working-directory: backend
+        run: ruff check app
+      - name: Test
+        working-directory: backend
+        env:
+          AI_PROVIDER: fake
+          MCP_TRANSPORT: in-process
+        run: pytest -q
+
+  # ── The job that matters most. The product's credibility rests on the deterministic
+  # engine producing correct, reproducible findings. These golden architectures assert
+  # exactly that, and a regression fails the build rather than shipping quietly.
+  evals:
+    name: Scoring engine evals
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install dependencies
+        run: |
+          pip install -r mcp-server/requirements.txt
+          pip install pytest
+      - name: Run golden-architecture evals
+        run: python tests/evals/run_evals.py
+      - name: Run eval test suite (determinism, monotonic improvement)
+        working-directory: tests/evals
+        run: pytest -q
+      - name: Publish eval results
+        if: always()
+        run: |
+          python tests/evals/run_evals.py --json > eval-results.json || true
+          {
+            echo "### Scoring engine evals"
+            echo ""
+            echo "| Case | Score | Grade | Result |"
+            echo "|---|---|---|---|"
+            python - <<'PY'
+          import json
+          try:
+              d = json.load(open("eval-results.json"))
+          except Exception:
+              raise SystemExit(0)
+          for c in d["cases"]:
+              o = c["observed"]
+              mark = "PASS" if c["passed"] else "FAIL"
+              print(f"| `{c['id']}` | {o['score']} | {o['grade']} | {mark} |")
+          print("")
+          print(f"**{d['passed']}/{d['total']} passed ({d['pass_rate']}%)**")
+          PY
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: eval-results.json
+          retention-days: 30
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci || npm install
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint --if-present
+      - name: Type check
+        working-directory: frontend
+        run: npx tsc --noEmit
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+  # ── Proves the images actually build. Does not push: deploy.yml owns that.
+  docker:
+    name: Container builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/backend.Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build MCP server image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/mcp-server.Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/frontend.Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  ci-passed:
+    name: CI passed
+    runs-on: ubuntu-latest
+    needs: [corpus, mcp-server, backend, evals, frontend, docker]
+    if: always()
+    steps:
+      - name: Check all jobs succeeded
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "One or more CI jobs failed."
+            exit 1
+          fi
+          echo "All CI jobs passed."

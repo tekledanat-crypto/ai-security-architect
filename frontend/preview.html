@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Security Architect — UI Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --base:#0a0e17; --surface:#0f1524; --s2:#151c2e; --s3:#1c2740;
+    --border:#243049; --border-b:#2f3d5c;
+    --ink:#e8edf7; --muted:#9aa8c4; --faint:#5f6f8f;
+    --azure:#3b9bff; --azure-b:#5eb0ff;
+    --crit:#ff4d6d; --high:#ff8f3f; --med:#ffcf3f; --low:#4fd1a5; --pass:#4fd1a5; --fail:#ff4d6d;
+    --display:"Space Grotesk",system-ui,sans-serif; --sans:"Inter",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--ink);
+    background:radial-gradient(1200px 600px at 80% -10%,rgba(59,155,255,.08),transparent),var(--base);
+    height:100vh;overflow:hidden}
+  .app{display:flex;height:100vh}
+  /* Sidebar */
+  aside{width:256px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column}
+  .brand{display:flex;gap:10px;align-items:center;padding:20px}
+  .logo{width:36px;height:36px;border-radius:10px;background:rgba(59,155,255,.15);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 1px rgba(59,155,255,.3),0 0 24px rgba(59,155,255,.12);color:var(--azure);font-size:18px}
+  .brand h1{font-family:var(--display);font-size:15px;font-weight:600}
+  .brand .sub{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint)}
+  nav{flex:1;padding:8px 12px}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;color:var(--muted);
+    font-size:14px;cursor:pointer;position:relative;text-decoration:none;margin-bottom:2px}
+  .nav-item:hover{background:var(--s2);color:var(--ink)}
+  .nav-item.active{background:var(--s3);color:var(--ink)}
+  .nav-item.active::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);height:20px;width:2px;border-radius:2px;background:var(--azure)}
+  .nav-item .ic{width:18px;text-align:center;color:var(--faint)}
+  .nav-item.active .ic{color:var(--azure)}
+  .nav-item .chunk{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+  .sb-foot{border-top:1px solid var(--border);padding:16px 20px}
+  .dot{position:relative;display:inline-flex;height:8px;width:8px}
+  .dot span:first-child{position:absolute;inline-size:100%;block-size:100%;border-radius:50%;background:var(--pass);animation:ring 1.6s ease-out infinite}
+  .dot span:last-child{position:relative;height:8px;width:8px;border-radius:50%;background:var(--pass)}
+  @keyframes ring{0%{box-shadow:0 0 0 0 rgba(79,209,165,.5)}70%{box-shadow:0 0 0 6px rgba(79,209,165,0)}100%{box-shadow:0 0 0 0 rgba(79,209,165,0)}}
+  .sb-foot .lbl{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:8px}
+  .sb-foot .meta{font-family:var(--mono);font-size:10px;color:var(--faint);margin-top:4px}
+  /* Main */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  header.top{height:56px;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(15,21,36,.6);backdrop-filter:blur(8px);
+    display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+  .top .crumb{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+  .role{display:flex;align-items:center;gap:10px;border:1px solid var(--border);background:var(--s2);border-radius:8px;padding:6px 12px;font-size:14px;color:var(--muted);cursor:pointer}
+  .role .who{color:var(--ink)}
+  .content{flex:1;overflow-y:auto;padding:24px}
+  /* Hero */
+  .hero{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:24px}
+  .hero .row{display:flex;align-items:center;justify-content:space-between;gap:24px;position:relative}
+  .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+  .hero h2{font-family:var(--display);font-size:24px;font-weight:600;margin-top:8px}
+  .hero p{color:var(--muted);font-size:14px;margin-top:4px;max-width:440px}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--azure);color:#fff;border:none;border-radius:8px;
+    padding:9px 16px;font-size:14px;font-weight:500;cursor:pointer;margin-top:16px;font-family:var(--sans)}
+  .btn:hover{background:var(--azure-b)}
+  .ring-wrap{display:flex;align-items:center;gap:32px}
+  .ring{position:relative;width:144px;height:144px;display:flex;align-items:center;justify-content:center}
+  .ring .val{position:absolute;display:flex;flex-direction:column;align-items:center}
+  .ring .num{font-family:var(--display);font-size:32px;font-weight:700}
+  .ring .cap{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .ministat .n{font-family:var(--display);font-size:24px;font-weight:700}
+  .ministat .l{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .grid-tex{position:absolute;inset:0;opacity:.4;pointer-events:none;
+    background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+    background-size:32px 32px;-webkit-mask-image:radial-gradient(circle at 50% 0%,black,transparent 70%);mask-image:radial-gradient(circle at 50% 0%,black,transparent 70%)}
+  /* Metrics */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:20px}
+  .card{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:20px}
+  .metric .v{font-family:var(--display);font-size:30px;font-weight:700;margin-top:8px}
+  .metric .s{font-size:12px;color:var(--muted);margin-top:4px}
+  .cols{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:20px}
+  .fw{display:flex;align-items:center;gap:16px;margin-top:12px}
+  .fw .name{width:176px;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar{flex:1;height:8px;border-radius:4px;background:var(--s3);overflow:hidden}
+  .bar span{display:block;height:100%;border-radius:4px}
+  .fw .sc{width:32px;text-align:right;font-family:var(--mono);font-size:12px}
+  .tag{width:56px;text-align:center;font-family:var(--mono);font-size:10px;border-radius:4px;padding:2px 6px}
+  .tag.pass{border:1px solid rgba(79,209,165,.3);background:rgba(79,209,165,.1);color:var(--pass)}
+  .tag.fail{border:1px solid rgba(255,77,109,.3);background:rgba(255,77,109,.1);color:var(--fail)}
+  .act{display:flex;gap:12px;margin-top:16px}
+  .act .ic{font-size:16px;margin-top:2px}
+  .act .t{font-size:14px}
+  .act .m{font-family:var(--mono);font-size:11px;color:var(--faint)}
+  /* Chat */
+  .tabs{display:flex;gap:8px;margin-bottom:16px}
+  .tab{font-family:var(--mono);font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--border);color:var(--muted);cursor:pointer;background:var(--s2)}
+  .tab.on{border-color:var(--azure);color:var(--ink)}
+  .chat{border:1px solid var(--border);border-radius:16px;background:var(--surface);overflow:hidden}
+  .chat .head{border-bottom:1px solid var(--border);padding:16px 20px}
+  .chat .head h3{font-family:var(--display);font-size:16px;font-weight:600}
+  .chat .head p{font-size:13px;color:var(--muted)}
+  .msgs{padding:20px;display:flex;flex-direction:column;gap:20px}
+  .msg{display:flex;gap:12px}
+  .msg.user{flex-direction:row-reverse}
+  .av{width:32px;height:32px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px}
+  .av.ai{background:rgba(59,155,255,.15);color:var(--azure)}
+  .av.you{background:var(--s3);color:var(--muted)}
+  .bubble{max-width:80%;border-radius:16px;padding:10px 16px;font-size:14px;line-height:1.6}
+  .bubble.ai{background:var(--s2)}
+  .bubble.user{background:rgba(59,155,255,.15)}
+  .rail{border-left:2px solid rgba(59,155,255,.3);padding-left:12px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px}
+  .rail .line{font-family:var(--mono);font-size:12px;display:flex;align-items:center;gap:8px}
+  .rail .ok{color:var(--pass)} .rail .run{color:var(--azure)} .rail .den{color:var(--fail)}
+  .rail .tool{color:var(--muted)} .rail .arrow{color:var(--faint)} .rail .sum{color:var(--ink)}
+  .composer{border-top:1px solid var(--border);padding:16px 20px;display:flex;gap:12px;align-items:center}
+  .composer .box{flex:1;border:1px solid var(--border);background:var(--s2);border-radius:12px;padding:10px 16px;color:var(--faint);font-size:14px}
+  .send{width:44px;height:44px;border-radius:12px;background:var(--azure);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .note{font-family:var(--mono);font-size:10px;color:var(--faint);padding:0 20px 14px}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <div class="logo">◈</div>
+      <div>
+        <h1>Security Architect</h1>
+        <div class="sub">AI · MCP · Azure</div>
+      </div>
+    </div>
+    <nav>
+      <a class="nav-item active" onclick="show('dash',this)"><span class="ic">▦</span><span style="flex:1">Dashboard</span></a>
+      <a class="nav-item" onclick="show('chat',this)"><span class="ic">◈</span><span style="flex:1">AI Assistant</span></a>
+      <a class="nav-item" onclick="show('designer',this)"><span class="ic">⬡</span><span style="flex:1">Architecture Designer</span></a>
+      <a class="nav-item" onclick="show('compliance',this)"><span class="ic">✓</span><span style="flex:1">Compliance</span></a>
+      <a class="nav-item" onclick="show('threats',this)"><span class="ic">⚠</span><span style="flex:1">Threat Model</span></a>
+      <a class="nav-item" onclick="show('reports',this)"><span class="ic">▤</span><span style="flex:1">Reports</span></a>
+      <a class="nav-item"><span class="ic">⚙</span><span style="flex:1">Settings</span><span class="chunk">C11</span></a>
+    </nav>
+    <div class="sb-foot">
+      <div style="display:flex;align-items:center">
+        <span class="dot"><span></span><span></span></span>
+        <span class="lbl">MCP server online</span>
+      </div>
+      <div class="meta">11 frameworks · 137 controls</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <div class="crumb" id="crumb">Azure Security Design Console</div>
+      <div class="role"><span style="color:var(--azure)">◉</span><span class="who">Security Architect</span><span>▾</span></div>
+    </header>
+
+    <div class="content">
+      <!-- DASHBOARD -->
+      <div id="dash">
+        <div class="hero">
+          <div class="grid-tex"></div>
+          <div class="row">
+            <div>
+              <div class="eyebrow">Current security posture</div>
+              <h2>Demo Web Application</h2>
+              <p>Latest assessment across 11 frameworks. Resolve critical and high findings first — remediation is prioritized by severity.</p>
+              <button class="btn" onclick="show('chat',document.querySelectorAll('.nav-item')[1])">Design a new architecture →</button>
+            </div>
+            <div class="ring-wrap">
+              <div class="ring">
+                <svg width="144" height="144" viewBox="0 0 120 120" style="transform:rotate(-90deg)">
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="#243049" stroke-width="8"/>
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="#ffcf3f" stroke-width="8" stroke-linecap="round"
+                    stroke-dasharray="326.7" stroke-dashoffset="84.9"/>
+                </svg>
+                <div class="val"><span class="num">74</span><span class="cap">Security</span></div>
+              </div>
+              <div style="display:flex;gap:24px">
+                <div class="ministat"><div class="n">68%</div><div class="l">Compliance</div></div>
+                <div class="ministat"><div class="n">81%</div><div class="l">Arch health</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <div class="card metric"><div class="eyebrow">Critical risks</div><div class="v" style="color:var(--crit)">1</div><div class="s">Fix immediately</div></div>
+          <div class="card metric"><div class="eyebrow">High risks</div><div class="v" style="color:var(--high)">6</div><div class="s">Address this sprint</div></div>
+          <div class="card metric"><div class="eyebrow">Passed controls</div><div class="v" style="color:var(--pass)">41</div><div class="s">of 63 applicable</div></div>
+          <div class="card metric"><div class="eyebrow">Failed controls</div><div class="v" style="color:var(--fail)">22</div><div class="s">Across all frameworks</div></div>
+        </div>
+
+        <div class="cols">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="eyebrow">Framework compliance</div>
+              <span style="font-family:var(--mono);font-size:10px;color:var(--faint)">137 controls indexed</span>
+            </div>
+            <div id="fwbars"></div>
+          </div>
+          <div class="card">
+            <div class="eyebrow">Recent activity</div>
+            <div class="act"><span class="ic" style="color:var(--crit)">⚠</span><div><div class="t">Public blob access detected</div><div class="m">Storage Account · CIS-4.1.4</div></div></div>
+            <div class="act"><span class="ic" style="color:var(--azure)">◈</span><div><div class="t">Validated Demo Web Application</div><div class="m">22 findings · score 21→74</div></div></div>
+            <div class="act"><span class="ic" style="color:var(--pass)">✓</span><div><div class="t">Private endpoints added</div><div class="m">Azure SQL · MCSB NS-2</div></div></div>
+            <div class="act"><span class="ic" style="color:var(--muted)">⬡</span><div><div class="t">STRIDE model generated</div><div class="m">32 threats mapped</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHAT -->
+      <div id="chat" class="hidden">
+        <div class="chat">
+          <div class="head"><h3>AI Assistant</h3><p>Interview-driven secure architecture design, grounded in live MCP tools.</p></div>
+          <div class="msgs">
+            <div class="msg user"><div class="av you">You</div><div class="bubble user">I want to build an ecommerce website</div></div>
+            <div class="msg"><div class="av ai">◈</div><div><div class="bubble ai">Great. Will customers log in and will you store payment information? When you've described the design, say "validate my architecture" and I'll check it against the frameworks.</div></div></div>
+            <div class="msg user"><div class="av you">You</div><div class="bubble user">Yes to both. Validate my architecture.</div></div>
+            <div class="msg"><div class="av ai">◈</div><div>
+              <div class="rail">
+                <div class="line"><span class="ok">✓</span><span style="color:var(--faint)">⚙</span><span class="tool">validate_architecture</span><span class="arrow">→</span><span class="sum">score 21/100 (F), 22 failing controls</span></div>
+                <div class="line"><span class="ok">✓</span><span style="color:var(--faint)">⚙</span><span class="tool">get_stride_threats</span><span class="arrow">→</span><span class="sum">32 STRIDE threats</span></div>
+              </div>
+              <div class="bubble ai">Your architecture scored <b>21/100 (grade F)</b>. I found 22 failing controls — 1 critical and 17 high severity. The most urgent issues are exposed data services and missing encryption. Say "remediate" for a prioritized fix plan, or "show threats" for the STRIDE model.</div>
+            </div></div>
+          </div>
+          <div class="composer">
+            <div class="box">Describe your solution, or ask me to validate an architecture…</div>
+            <button class="send">➤</button>
+          </div>
+          <div class="note">Findings are produced by a deterministic engine over 137 controls — the assistant narrates, it doesn't invent.</div>
+        </div>
+      </div>
+
+      <!-- DESIGNER -->
+      <div id="designer" class="hidden">
+        <div class="chat" style="padding:0">
+          <div class="head" style="display:flex;justify-content:space-between;align-items:center">
+            <div><h3>Architecture Designer</h3><p>Build or edit an Azure design, then validate it live against the frameworks.</p></div>
+            <button class="btn" style="margin:0" onclick="validateDesign()">✓ Validate</button>
+          </div>
+          <div style="display:flex;height:460px">
+            <div style="width:158px;border-right:1px solid var(--border);padding:12px;overflow-y:auto">
+              <div class="eyebrow" style="margin-bottom:10px">Add service</div>
+              <div id="palette"></div>
+            </div>
+            <div style="flex:1;position:relative;background:radial-gradient(circle,var(--border) 1px,transparent 1px);background-size:20px 20px">
+              <svg id="canvas" width="100%" height="100%" viewBox="0 0 640 460" preserveAspectRatio="xMidYMid meet"></svg>
+              <div id="hint" style="position:absolute;bottom:12px;left:12px;font-family:var(--mono);font-size:10px;color:var(--faint)">Click a node to toggle its security properties</div>
+            </div>
+            <div id="drawer" style="width:262px;border-left:1px solid var(--border);padding:16px;overflow-y:auto;display:none">
+              <div class="eyebrow" style="margin-bottom:12px">Validation results</div>
+              <div id="drawerBody"></div>
+            </div>
+            <div id="propPanel" style="width:222px;border-left:1px solid var(--border);padding:16px;overflow-y:auto;display:none">
+              <div id="propBody"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPLIANCE -->
+      <div id="compliance" class="hidden">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+          <div><h2 style="font-family:var(--display);font-size:18px;font-weight:600">Compliance Results</h2>
+            <p style="font-size:13px;color:var(--muted)" id="compSub">Demo Web Application</p></div>
+          <div style="display:flex;border:1px solid var(--border);background:var(--s2);border-radius:8px;padding:2px">
+            <div id="vFw" class="tab on" onclick="setCompView('framework')" style="border:none;background:none">By framework</div>
+            <div id="vSev" class="tab" onclick="setCompView('severity')" style="border:none;background:none">By severity</div>
+          </div>
+        </div>
+        <div id="compBody"></div>
+      </div>
+
+      <!-- THREATS -->
+      <div id="threats" class="hidden">
+        <div style="margin-bottom:14px">
+          <h2 style="font-family:var(--display);font-size:18px;font-weight:600">Threat Model</h2>
+          <p style="font-size:13px;color:var(--muted)" id="thrSub"></p>
+        </div>
+        <div style="border:1px solid var(--border);background:var(--s2);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:18px">
+          Each threat traces to a specific failing control and its MITRE technique — the model is derived from the framework corpus, not generated freehand.
+        </div>
+        <div id="thrBody" style="display:grid;grid-template-columns:1fr 1fr;gap:16px"></div>
+      </div>
+
+      <!-- REPORTS -->
+      <div id="reports" class="hidden">
+        <h2 style="font-family:var(--display);font-size:18px;font-weight:600">Reports</h2>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Export a professional PDF assessment for Demo Web Application.</p>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+          <div class="card">
+            <div class="eyebrow">Report contents</div>
+            <div id="repSections" style="margin-top:16px"></div>
+          </div>
+          <div>
+            <div class="card" style="margin-bottom:16px">
+              <div class="eyebrow">This assessment</div>
+              <div id="repMeta" style="margin-top:12px;font-family:var(--mono);font-size:12px"></div>
+            </div>
+            <div class="card">
+              <div style="background:var(--azure);color:#fff;border-radius:8px;padding:10px;text-align:center;font-size:14px;font-weight:500;cursor:pointer">⤓ Generate PDF</div>
+              <p style="font-family:var(--mono);font-size:10px;color:var(--faint);margin-top:12px;line-height:1.6">
+                The report is re-validated server-side at generation time — its numbers come from the engine, never from the browser.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  const FW=[["CIS Azure Benchmark",78,"FAIL"],["Microsoft Cloud Security",62,"FAIL"],["NIST 800-53",84,"PASS"],["ISO 27001",88,"PASS"],["OWASP LLM Top 10",70,"FAIL"]];
+  const col=s=>s>=80?"#4fd1a5":s>=65?"#ffcf3f":"#ff8f3f";
+  document.getElementById("fwbars").innerHTML=FW.map(([n,s,st])=>
+    `<div class="fw"><span class="name">${n}</span><div class="bar"><span style="width:${s}%;background:${col(s)}"></span></div><span class="sc">${s}</span><span class="tag ${st.toLowerCase()}">${st}</span></div>`).join("");
+  function show(id,el){
+    ["dash","chat","designer","compliance","threats","reports"].forEach(v=>document.getElementById(v).classList.toggle("hidden",v!==id));
+    document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+    if(el)el.classList.add("active");
+    const titles={chat:"AI Assistant",designer:"Architecture Designer",compliance:"Compliance Results",threats:"Threat Model",reports:"Reports"};
+    if(id==="compliance")renderCompliance();
+    if(id==="threats")renderThreats();
+    if(id==="reports")renderReports();
+    if(id==="dash")renderDash();
+    document.getElementById("crumb").textContent = titles[id] || "Azure Security Design Console";
+  }
+
+  // ── Designer: mock architecture, SVG render, live validate ──
+  const ZONES={internet:["Internet","#5f6f8f",0],edge:["Edge","#3b9bff",1],app:["Application","#7c8cff",2],data:["Data","#4fd1a5",3],security:["Security & Ops","#ff8f3f",4],identity:["Identity","#c88bff",5]};
+  const CATALOG={
+    "app-service":["App Service","app",[["https_only","HTTPS only",true],["managed_identity","Managed identity",true]]],
+    "azure-sql":["Azure SQL","data",[["public_access","Public access",false],["auditing_enabled","Auditing",true]]],
+    "storage-account":["Storage Account","data",[["public_access","Public access",false],["allow_blob_public_access","Anon blob",false],["https_only","Secure transfer",true]]],
+    "key-vault":["Key Vault","data",[["firewall_enabled","Firewall",true],["purge_protection","Purge protection",true]]],
+    "entra-id":["Entra ID","identity",[["mfa_enabled","MFA",true]]],
+    "app-gateway-waf":["App Gateway + WAF","edge",[]],
+    "front-door":["Front Door","edge",[]],
+    "defender-for-cloud":["Defender for Cloud","security",[]],
+    "azure-openai":["Azure OpenAI","app",[["input_filtering","Input filtering",true],["tool_allowlist","Tool allow-list",true]]],
+    "private-endpoint":["Private Endpoint","data",[]],
+  };
+  let design={nodes:[
+    {id:"web",service:"app-service",properties:{https_only:false,managed_identity:false}},
+    {id:"sql",service:"azure-sql",properties:{public_access:true,auditing_enabled:false}},
+    {id:"store",service:"storage-account",properties:{public_access:true,allow_blob_public_access:true,https_only:false}},
+    {id:"kv",service:"key-vault",properties:{firewall_enabled:false,purge_protection:false}},
+    {id:"entra",service:"entra-id",properties:{mfa_enabled:false}},
+  ],edges:[{source:"web",target:"sql"},{source:"web",target:"store"},{source:"web",target:"kv"}]};
+  let selectedId=null;
+
+  const SEVW={critical:10,high:6,medium:3,low:1};
+  const RULES=[
+    ["storage-account","allow_blob_public_access",false,"cis-azure","CIS-4.1.4","critical","Anonymous public blob access is permitted.","Set 'Allow Blob public access' to Disabled."],
+    ["storage-account","public_access",false,"cis-azure","CIS-4.1.1","high","Storage Account allows public network access.","Disable public access; add a Private Endpoint."],
+    ["storage-account","https_only",true,"cis-azure","CIS-4.2","high","Storage Account permits unencrypted transfer.","Enable 'Secure transfer required'."],
+    ["azure-sql","public_access",false,"cis-azure","CIS-5.1.2","high","Azure SQL allows public network access.","Set public access to Deny."],
+    ["azure-sql","auditing_enabled",true,"cis-azure","CIS-5.1.1","medium","Azure SQL auditing is not enabled.","Enable server-level auditing."],
+    ["key-vault","firewall_enabled",true,"cis-azure","CIS-8.1","high","Key Vault firewall is disabled.","Enable the Key Vault firewall."],
+    ["key-vault","purge_protection",true,"cis-azure","CIS-8.4","high","Key Vault purge protection is off.","Enable purge protection."],
+    ["app-service","https_only",true,"cis-azure","CIS-9.2","high","App Service accepts HTTP traffic.","Enable 'HTTPS Only'."],
+    ["app-service","managed_identity",true,"cis-azure","CIS-9.5","high","App Service lacks a Managed Identity.","Assign a managed identity."],
+    ["entra-id","mfa_enabled",true,"cis-azure","CIS-2.1.1","critical","Admin accounts lack MFA.","Enforce MFA via Conditional Access."],
+    ["azure-openai","input_filtering",true,"owasp-llm-top10","LLM01","critical","AI workload has no prompt-injection defenses.","Apply Prompt Shields + input classifiers."],
+    ["azure-openai","tool_allowlist",true,"owasp-llm-top10","LLM06","high","AI tool access is not allow-listed.","Allow-list tools per role."],
+  ];
+  const PRESENCE=[
+    ["app-gateway-waf","mcsb","NS-6","high","No WAF protects the public entry point.","Front public apps with a WAF."],
+    ["defender-for-cloud","cis-azure","CIS-3.1","high","Defender for Cloud is not deployed.","Enable Defender plans."],
+  ];
+  function validate(){
+    const services=new Set(design.nodes.map(n=>n.service));
+    const findings=[];let earned=0,possible=0;
+    for(const[svc,prop,secure,fw,ctrl,sev,msg,rem]of RULES){
+      const affected=design.nodes.filter(n=>n.service===svc);if(!affected.length)continue;
+      const w=SEVW[sev];possible+=w;
+      const bad=affected.filter(n=>n.properties[prop]!==secure);
+      if(!bad.length){earned+=w;findings.push({fw,ctrl,sev,status:"pass"});}
+      else findings.push({fw,ctrl,sev,status:"fail",msg,rem,nodes:bad.map(n=>n.id)});
+    }
+    if(design.nodes.length)for(const[svc,fw,ctrl,sev,msg,rem]of PRESENCE){
+      const w=SEVW[sev];possible+=w;
+      if(services.has(svc)){earned+=w;findings.push({fw,ctrl,sev,status:"pass"});}
+      else findings.push({fw,ctrl,sev,status:"fail",msg,rem,nodes:[]});
+    }
+    const score=possible?Math.round(100*earned/possible):100;
+    const grade=score>=90?"A":score>=80?"B":score>=70?"C":score>=60?"D":"F";
+    const fails=findings.filter(f=>f.status==="fail");
+    return{score,grade,fails,passed:findings.filter(f=>f.status==="pass").length,
+      crit:fails.filter(f=>f.sev==="critical").length,high:fails.filter(f=>f.sev==="high").length,med:fails.filter(f=>f.sev==="medium").length};
+  }
+  const SEVC={critical:"#ff4d6d",high:"#ff8f3f",medium:"#ffcf3f",low:"#4fd1a5"};
+
+  function renderCanvas(){
+    const svg=document.getElementById("canvas");
+    const perZone={};const pos={};
+    design.nodes.forEach(n=>{
+      const[,zone]=CATALOG[n.service]||["?","app",[]];
+      const z=ZONES[zone];const col=z[2];const row=perZone[zone]||0;perZone[zone]=row+1;
+      pos[n.id]={x:24+col*104,y:56+row*82,zone};
+    });
+    let s="";
+    design.edges.forEach(e=>{const a=pos[e.source],b=pos[e.target];if(a&&b)
+      s+=`<line x1="${a.x+84}" y1="${a.y+26}" x2="${b.x}" y2="${b.y+26}" stroke="#2f3d5c" stroke-width="1.5"/>`;});
+    Object.entries(ZONES).forEach(([k,z])=>{if(perZone[k])
+      s+=`<text x="${24+z[2]*104+42}" y="40" fill="${z[1]}" font-family="monospace" font-size="9" text-anchor="middle" style="text-transform:uppercase;letter-spacing:1px">${z[0]}</text>`;});
+    design.nodes.forEach(n=>{
+      const[name,zone,props]=CATALOG[n.service]||[n.service,"app",[]];
+      const p=pos[n.id];const zc=ZONES[zone][1];
+      const risky=props.some(([k,,secure])=>n.properties[k]!==secure);
+      const sel=n.id===selectedId;
+      s+=`<g style="cursor:pointer" onclick="selectNode('${n.id}')">
+        <rect x="${p.x}" y="${p.y}" width="84" height="52" rx="10" fill="#151c2e" stroke="${sel?'#3b9bff':'#243049'}" stroke-width="${sel?2:1}"/>
+        <rect x="${p.x+8}" y="${p.y+10}" width="20" height="20" rx="6" fill="${zc}22"/>
+        <circle cx="${p.x+18}" cy="${p.y+20}" r="4" fill="${zc}"/>
+        <text x="${p.x+34}" y="${p.y+20}" fill="#e8edf7" font-family="Inter,sans-serif" font-size="9">${name.length>11?name.slice(0,10)+'…':name}</text>
+        <text x="${p.x+34}" y="${p.y+32}" fill="${zc}" font-family="monospace" font-size="7" style="text-transform:uppercase">${ZONES[zone][0].split(' ')[0]}</text>
+        ${risky?`<circle cx="${p.x+76}" cy="${p.y+8}" r="3.5" fill="#ff8f3f"/>`:''}
+      </g>`;
+    });
+    svg.innerHTML=s;
+  }
+  function renderPalette(){
+    document.getElementById("palette").innerHTML=Object.entries(CATALOG).map(([slug,[name,zone]])=>
+      `<div onclick="addNode('${slug}')" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:12px;color:var(--muted)"
+        onmouseover="this.style.background='#151c2e'" onmouseout="this.style.background=''">
+        <span style="width:6px;height:6px;border-radius:50%;background:${ZONES[zone][1]}"></span>${name}</div>`).join("");
+  }
+  let idc=1;
+  function addNode(slug){
+    const[,,props]=CATALOG[slug];const properties={};props.forEach(([k,,s])=>properties[k]=s);
+    design.nodes.push({id:slug+"-"+(idc++),service:slug,properties});renderCanvas();
+  }
+  function selectNode(id){
+    selectedId=id;renderCanvas();
+    const n=design.nodes.find(x=>x.id===id);const[name,zone,props]=CATALOG[n.service];
+    document.getElementById("drawer").style.display="none";
+    const panel=document.getElementById("propPanel");panel.style.display="block";
+    let h=`<div style="font-size:14px;color:var(--ink);font-weight:500;margin-bottom:2px">${name}</div>
+      <div style="font-family:monospace;font-size:10px;color:${ZONES[zone][1]};text-transform:uppercase;margin-bottom:14px">${ZONES[zone][0]}</div>`;
+    if(props.length){h+=`<div class="eyebrow" style="margin-bottom:8px">Security properties</div>`;
+      props.forEach(([k,label,secure])=>{const v=n.properties[k];
+        h+=`<div onclick="toggle('${id}','${k}')" style="display:flex;justify-content:space-between;align-items:center;padding:7px 4px;cursor:pointer">
+          <span style="font-size:13px;color:var(--muted)">${label}</span>
+          <span style="position:relative;width:34px;height:18px;border-radius:9px;background:${v?'#3b9bff':'#243049'}">
+            <span style="position:absolute;top:2px;left:${v?'18px':'2px'};width:14px;height:14px;border-radius:50%;background:#fff;transition:all .15s"></span></span>
+        </div>`;});
+    }else h+=`<div style="font-size:13px;color:var(--muted)">Presence alone contributes to controls; no toggles.</div>`;
+    h+=`<div onclick="removeNode('${id}')" style="margin-top:16px;text-align:center;padding:8px;border:1px solid rgba(255,77,109,.3);background:rgba(255,77,109,.1);color:#ff4d6d;border-radius:8px;font-size:13px;cursor:pointer">Remove node</div>`;
+    document.getElementById("propBody").innerHTML=h;
+  }
+  function toggle(id,key){const n=design.nodes.find(x=>x.id===id);n.properties[key]=!n.properties[key];renderCanvas();selectNode(id);}
+  function removeNode(id){design.nodes=design.nodes.filter(n=>n.id!==id);design.edges=design.edges.filter(e=>e.source!==id&&e.target!==id);selectedId=null;document.getElementById("propPanel").style.display="none";renderCanvas();}
+  function validateDesign(){
+    document.getElementById("propPanel").style.display="none";
+    const d=document.getElementById("drawer");d.style.display="block";
+    const r=validate();
+    const gc=r.score>=90?"#4fd1a5":r.score>=70?"#ffcf3f":r.score>=50?"#ff8f3f":"#ff4d6d";
+    let h=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div style="width:52px;height:52px;border:2px solid ${gc};border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:22px;font-weight:700;color:${gc}">${r.grade}</div>
+      <div><div style="font-family:var(--display);font-size:26px;font-weight:700;color:var(--ink)">${r.score}<span style="font-size:14px;color:var(--faint)">/100</span></div>
+      <div style="font-family:monospace;font-size:10px;color:var(--muted)">${r.fails.length} failing · ${r.passed} passing</div></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px">
+        ${[["Critical",r.crit,"#ff4d6d"],["High",r.high,"#ff8f3f"],["Medium",r.med,"#ffcf3f"]].map(([l,v,c])=>
+          `<div style="background:#151c2e;border-radius:8px;padding:8px;text-align:center">
+            <div style="font-family:var(--display);font-size:18px;font-weight:700;color:${c}">${v}</div>
+            <div style="font-family:monospace;font-size:8px;color:var(--faint);text-transform:uppercase">${l}</div></div>`).join("")}
+      </div>
+      <div class="eyebrow" style="margin-bottom:8px">Top findings</div>`;
+    const order={critical:0,high:1,medium:2,low:3};
+    r.fails.sort((a,b)=>order[a.sev]-order[b.sev]);
+    if(!r.fails.length)h+=`<div style="padding:10px;border:1px solid rgba(79,209,165,.3);background:rgba(79,209,165,.1);color:#4fd1a5;border-radius:8px;font-size:13px">✓ No failing controls — compliant with the assessed set.</div>`;
+    else r.fails.slice(0,7).forEach(f=>{h+=`<div style="border:1px solid var(--border);background:#151c2e;border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:monospace;font-size:8px;text-transform:uppercase;color:${SEVC[f.sev]};border:1px solid ${SEVC[f.sev]}55;border-radius:4px;padding:1px 5px">${f.sev}</span>
+        <span style="font-family:monospace;font-size:9px;color:var(--faint)">${f.fw}:${f.ctrl}</span></div>
+      <div style="font-size:12px;color:var(--ink)">${f.msg}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">${f.rem}</div></div>`;});
+    document.getElementById("drawerBody").innerHTML=h;
+  }
+
+  // ── Compliance + Threat Model views ──
+  const FWNAME={"cis-azure":"CIS Microsoft Azure Foundations Benchmark","mcsb":"Microsoft Cloud Security Benchmark","owasp-llm-top10":"OWASP Top 10 for LLM Applications"};
+  const CTRL_STRIDE={
+    "CIS-4.1.4":[["information-disclosure"],["T1530"],"Disable public blob access"],
+    "CIS-4.1.1":[["information-disclosure"],["T1530"],"Prohibit public storage access"],
+    "CIS-4.2":[["information-disclosure","tampering"],["T1557"],"Require secure transfer"],
+    "CIS-5.1.2":[["information-disclosure"],["T1190"],"Deny public SQL access"],
+    "CIS-5.1.1":[["repudiation"],["T1070"],"Enable SQL auditing"],
+    "CIS-8.1":[["information-disclosure","tampering"],["T1552"],"Restrict Key Vault network"],
+    "CIS-8.4":[["tampering","denial-of-service"],["T1485"],"Enable purge protection"],
+    "CIS-9.2":[["information-disclosure","tampering"],["T1557"],"Enforce HTTPS only"],
+    "CIS-9.5":[["spoofing","information-disclosure"],["T1552.001"],"Use managed identity"],
+    "CIS-2.1.1":[["spoofing","elevation-of-privilege"],["T1078"],"Require MFA for admins"],
+    "LLM01":[["tampering","elevation-of-privilege"],["AML.T0051"],"Prompt injection defense"],
+    "LLM06":[["elevation-of-privilege"],["AML.T0053"],"Limit excessive agency"],
+    "NS-6":[["tampering","denial-of-service"],["T1190"],"Deploy a WAF"],
+    "CIS-3.1":[["tampering"],["T1562.001"],"Enable Defender for Cloud"],
+  };
+  const STRIDE_CATS=[["spoofing","Spoofing","#c88bff","Impersonating identity"],["tampering","Tampering","#ff8f3f","Modifying data or code"],
+    ["repudiation","Repudiation","#ffcf3f","Denying actions occurred"],["information-disclosure","Information Disclosure","#ff4d6d","Exposing data"],
+    ["denial-of-service","Denial of Service","#3b9bff","Degrading availability"],["elevation-of-privilege","Elevation of Privilege","#4fd1a5","Gaining unauthorized rights"]];
+  let compView="framework";
+  function setCompView(v){compView=v;
+    document.getElementById("vFw").className="tab"+(v==="framework"?" on":"");
+    document.getElementById("vSev").className="tab"+(v==="severity"?" on":"");
+    renderCompliance();}
+  function ringSvg(score){
+    const c=score>=90?"#4fd1a5":score>=70?"#ffcf3f":score>=50?"#ff8f3f":"#ff4d6d";
+    const circ=2*Math.PI*52, off=circ-(score/100)*circ;
+    return `<div class="ring"><svg width="144" height="144" viewBox="0 0 120 120" style="transform:rotate(-90deg)">
+      <circle cx="60" cy="60" r="52" fill="none" stroke="#243049" stroke-width="8"/>
+      <circle cx="60" cy="60" r="52" fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${off}"/>
+      </svg><div class="val"><span class="num">${score}</span><span class="cap">Compliance</span></div></div>`;
+  }
+  function findingCard(f,showFw){
+    return `<div style="border:1px solid var(--border);background:#151c2e;border-radius:8px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;gap:12px">
+        <div style="display:flex;gap:8px"><span style="color:#ff8f3f;font-size:13px">⚠</span>
+          <div><div style="font-size:13px;color:var(--ink)">${f.msg}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">${f.rem}</div>
+            ${f.nodes&&f.nodes.length?`<div style="margin-top:6px">${f.nodes.map(n=>`<span style="background:#1c2740;border-radius:4px;padding:2px 6px;font-family:var(--mono);font-size:10px;color:var(--muted);margin-right:4px">${n}</span>`).join("")}</div>`:""}
+          </div></div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;color:${SEVC[f.sev]};border:1px solid ${SEVC[f.sev]}55;border-radius:4px;padding:1px 5px;display:inline-block">${f.sev}</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--faint);margin-top:4px">${showFw?f.fw+":":""}${f.ctrl}</div>
+        </div></div></div>`;
+  }
+  function renderCompliance(){
+    const r=validate();
+    document.getElementById("compSub").textContent=`Demo Web Application · assessed against ${new Set(r.fails.map(f=>f.fw)).size||2} frameworks`;
+    let h=`<div style="display:flex;gap:20px;align-items:center;border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:20px;margin-bottom:20px">
+      ${ringSvg(r.score)}
+      <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        ${[["Critical",r.crit,"#ff4d6d"],["High",r.high,"#ff8f3f"],["Passed",r.passed,"#4fd1a5"],["Failed",r.fails.length,"#ff4d6d"]].map(([l,v,c])=>
+          `<div style="background:#151c2e;border-radius:8px;padding:12px;text-align:center">
+            <div style="font-family:var(--display);font-size:22px;font-weight:700;color:${c}">${v}</div>
+            <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--faint)">${l}</div></div>`).join("")}
+      </div></div>`;
+    if(compView==="framework"){
+      const byFw={};r.fails.forEach(f=>{(byFw[f.fw]=byFw[f.fw]||[]).push(f);});
+      const allFw=[...new Set([...Object.keys(byFw),"cis-azure","mcsb"])];
+      allFw.forEach(fw=>{const items=byFw[fw]||[];
+        const total=items.length; const st=total?"FAIL":"PASS";
+        h+=`<div style="border:1px solid var(--border);background:var(--surface);border-radius:12px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:16px;padding:16px 20px">
+            <div style="flex:1"><div style="font-size:14px;color:var(--ink);font-weight:500">${FWNAME[fw]||fw}</div>
+              <div style="font-family:var(--mono);font-size:11px;color:var(--faint)">${total} failed</div></div>
+            <span class="tag ${st.toLowerCase()}">${st}</span></div>
+          ${total?`<div style="border-top:1px solid var(--border);padding:16px 20px">${items.map(f=>findingCard(f,false)).join("")}</div>`:""}
+        </div>`;});
+    } else {
+      ["critical","high","medium","low"].forEach(sev=>{
+        const items=r.fails.filter(f=>f.sev===sev);if(!items.length)return;
+        h+=`<div style="margin-bottom:20px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-family:var(--mono);font-size:10px;text-transform:uppercase;color:${SEVC[sev]};border:1px solid ${SEVC[sev]}55;border-radius:4px;padding:2px 8px">${sev}</span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--faint)">${items.length} finding${items.length>1?"s":""}</span></div>
+          ${items.map(f=>findingCard(f,true)).join("")}</div>`;});
+    }
+    document.getElementById("compBody").innerHTML=h;
+  }
+  function renderThreats(){
+    const r=validate();const buckets={};
+    r.fails.forEach(f=>{const m=CTRL_STRIDE[f.ctrl];if(!m)return;
+      m[0].forEach(cat=>{(buckets[cat]=buckets[cat]||[]).push({title:m[2],desc:f.msg,tech:m[1],sev:f.sev,mit:f.rem,nodes:f.nodes||[],src:f.fw+":"+f.ctrl});});});
+    const total=Object.values(buckets).reduce((n,a)=>n+a.length,0);
+    document.getElementById("thrSub").textContent=`Demo Web Application · ${total} threats derived from failing controls`;
+    const ord={critical:0,high:1,medium:2,low:3};
+    document.getElementById("thrBody").innerHTML=STRIDE_CATS.map(([id,label,color,hint])=>{
+      const items=(buckets[id]||[]).sort((a,b)=>ord[a.sev]-ord[b.sev]);
+      return `<div style="border:1px solid var(--border);background:var(--surface);border-radius:12px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)">
+          <div style="width:36px;height:36px;border-radius:10px;background:${color}22;color:${color};display:flex;align-items:center;justify-content:center;font-size:16px">⚠</div>
+          <div style="flex:1"><div style="font-size:14px;color:var(--ink);font-weight:500">${label}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--faint)">${hint}</div></div>
+          <span style="border-radius:99px;padding:4px 10px;font-family:var(--mono);font-size:11px;background:${items.length?color+"1f":"rgba(79,209,165,.12)"};color:${items.length?color:"#4fd1a5"}">${items.length?items.length+" threat"+(items.length>1?"s":""):"clear"}</span>
+        </div>
+        ${items.length?items.map(t=>`<div style="padding:12px 20px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+            <span style="font-size:13px;color:var(--ink)">${t.title}</span>
+            <span style="font-family:var(--mono);font-size:9px;text-transform:uppercase;color:${SEVC[t.sev]};border:1px solid ${SEVC[t.sev]}55;border-radius:4px;padding:1px 5px">${t.sev}</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px">${t.desc}</div>
+          <div style="display:flex;align-items:flex-start;gap:6px;margin-top:6px"><span style="color:#4fd1a5;font-size:11px">⚒</span><span style="font-size:12px;color:var(--ink)">${t.mit}</span></div>
+          <div style="margin-top:6px">${t.tech.map(x=>`<span style="border:1px solid var(--border);background:#1c2740;border-radius:4px;padding:2px 6px;font-family:var(--mono);font-size:10px;color:var(--muted);margin-right:6px">⌖ ${x}</span>`).join("")}
+            <span style="font-family:var(--mono);font-size:10px;color:var(--faint)">via ${t.src}</span></div>
+        </div>`).join(""):`<div style="padding:16px 20px;font-size:13px;color:var(--muted)">No failing controls map to this category in the current design.</div>`}
+      </div>`;}).join("");
+  }
+
+
+  const REP_SECTIONS=[["Executive Summary","Score, grade, risk counts, and a written assessment of production readiness"],
+    ["Architecture Diagram","Server-rendered zone diagram with failing components highlighted"],
+    ["Compliance Results","Per-framework score, passed/failed counts, and PASS/FAIL status"],
+    ["Security Findings","Every failing control with severity, remediation, and affected components"],
+    ["Threat Model (STRIDE)","Threats per category with mitigations and MITRE ATT&CK/ATLAS techniques"],
+    ["Recommendations","Prioritized remediation actions, critical first"],
+    ["Methodology & Scope","How findings are produced, and the limits of this assessment"]];
+  function renderReports(){
+    document.getElementById("repSections").innerHTML=REP_SECTIONS.map(([t,d])=>
+      `<div style="display:flex;gap:12px;margin-bottom:12px"><span style="color:#4fd1a5;font-size:13px">✓</span>
+        <div><div style="font-size:14px;color:var(--ink)">${t}</div>
+        <div style="font-size:13px;color:var(--muted)">${d}</div></div></div>`).join("");
+    const r=validate();
+    document.getElementById("repMeta").innerHTML=[["Architecture","Demo Web Application"],["Score",`${r.score}/100 (${r.grade})`],
+      ["Components",design.nodes.length],["Frameworks",new Set(r.fails.map(f=>f.fw)).size||2],["Findings",r.fails.length]]
+      .map(([l,v])=>`<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--faint)">${l}</span><span style="color:var(--ink)">${v}</span></div>`).join("");
+  }
+  // Dashboard now reflects the live design, matching the real app's store-backed dashboard.
+  function renderDash(){
+    const r=validate();
+    const el=document.querySelector("#dash .ring");
+    if(el){const c=r.score>=90?"#4fd1a5":r.score>=70?"#ffcf3f":r.score>=50?"#ff8f3f":"#ff4d6d";
+      const circ=2*Math.PI*52,off=circ-(r.score/100)*circ;
+      el.outerHTML=`<div class="ring"><svg width="144" height="144" viewBox="0 0 120 120" style="transform:rotate(-90deg)">
+        <circle cx="60" cy="60" r="52" fill="none" stroke="#243049" stroke-width="8"/>
+        <circle cx="60" cy="60" r="52" fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${off}"/>
+        </svg><div class="val"><span class="num">${r.score}</span><span class="cap">Security</span></div></div>`;}
+    const m=document.querySelectorAll("#dash .metric .v");
+    if(m.length===4){m[0].textContent=r.crit;m[1].textContent=r.high;m[2].textContent=r.passed;m[3].textContent=r.fails.length;}
+  }
+
+  renderCanvas();renderPalette();renderDash();
+</script>
+</body>
+</html>

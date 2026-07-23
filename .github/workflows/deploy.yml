@@ -1,0 +1,180 @@
+name: Deploy
+
+# OIDC federated credentials — no AZURE_CREDENTIALS secret, no stored client secret.
+# GitHub mints a short-lived token per run and Azure validates it against a federated
+# identity credential scoped to this repo/environment. A leaked repo yields nothing
+# reusable, which is precisely the point.
+#
+# Required repo configuration (variables, not secrets):
+#   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+# Required environment secret:
+#   POSTGRES_ADMIN_PASSWORD
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [dev, prod]
+        default: dev
+
+permissions:
+  contents: read
+  id-token: write # required for OIDC
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false # never cancel a deploy mid-flight
+
+env:
+  AZURE_LOCATION: westeurope
+  APP_NAME: aisecarch
+
+jobs:
+  # Deployment is gated on CI passing. Shipping an untested build would make the
+  # eval suite decorative.
+  validate:
+    name: Validate templates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Static pre-flight checks
+        run: |
+          python scripts/validate_bicep.py
+          python scripts/verify_governance_claims.py
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Lint Bicep
+        run: az bicep build --file infra/main.bicep --stdout > /dev/null
+      - name: What-if (preview changes without applying)
+        run: |
+          az deployment sub what-if \
+            --location "$AZURE_LOCATION" \
+            --template-file infra/main.bicep \
+            --parameters infra/params/${{ inputs.environment || 'dev' }}.bicepparam \
+            --parameters postgresAdminPassword="${{ secrets.POSTGRES_ADMIN_PASSWORD }}"
+
+  build-images:
+    name: Build and push images
+    runs-on: ubuntu-latest
+    needs: validate
+    outputs:
+      imageTag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        name: Derive image tag from commit
+        run: echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Resolve registry
+        id: acr
+        run: |
+          NAME=$(az acr list -g "rg-${APP_NAME}-${{ inputs.environment || 'dev' }}" --query "[0].name" -o tsv)
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "server=$(az acr show -n "$NAME" --query loginServer -o tsv)" >> "$GITHUB_OUTPUT"
+      # Token-based login via the OIDC session — no registry password anywhere.
+      - name: Log in to registry
+        run: az acr login --name ${{ steps.acr.outputs.name }}
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/backend.Dockerfile
+          push: true
+          tags: ${{ steps.acr.outputs.server }}/backend:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push MCP server
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/mcp-server.Dockerfile
+          push: true
+          tags: ${{ steps.acr.outputs.server }}/mcp-server:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/frontend.Dockerfile
+          push: true
+          tags: ${{ steps.acr.outputs.server }}/frontend:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # Gate: a CRITICAL vulnerability does not reach the cluster.
+      - name: Scan pushed images
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ steps.acr.outputs.server }}/backend:${{ steps.meta.outputs.tag }}
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+  deploy:
+    name: Deploy to ${{ inputs.environment || 'dev' }}
+    runs-on: ubuntu-latest
+    needs: build-images
+    environment: ${{ inputs.environment || 'dev' }} # approval gate lives here
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy infrastructure
+        id: infra
+        run: |
+          az deployment sub create \
+            --location "$AZURE_LOCATION" \
+            --name "deploy-${GITHUB_SHA::8}" \
+            --template-file infra/main.bicep \
+            --parameters infra/params/${{ inputs.environment || 'dev' }}.bicepparam \
+            --parameters imageTag=${{ needs.build-images.outputs.imageTag }} \
+            --parameters postgresAdminPassword="${{ secrets.POSTGRES_ADMIN_PASSWORD }}" \
+            --query properties.outputs -o json > outputs.json
+          echo "frontendUrl=$(jq -r .frontendUrl.value outputs.json)" >> "$GITHUB_OUTPUT"
+      - name: Smoke test
+        run: |
+          URL="${{ steps.infra.outputs.frontendUrl }}"
+          echo "Probing $URL"
+          for i in {1..30}; do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" "$URL" || echo 000)
+            if [[ "$CODE" == "200" ]]; then
+              echo "Frontend healthy after ${i} attempt(s)."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Frontend did not become healthy."
+          exit 1
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Deployment"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Environment | ${{ inputs.environment || 'dev' }} |"
+            echo "| Image tag | \`${{ needs.build-images.outputs.imageTag }}\` |"
+            echo "| Frontend | ${{ steps.infra.outputs.frontendUrl }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

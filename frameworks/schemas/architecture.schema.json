@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-security-architect/schemas/architecture.schema.json",
+  "title": "Architecture Definition",
+  "description": "Shared contract: the AI emits this, React Flow renders it, the MCP server validates it.",
+  "type": "object",
+  "required": ["name", "nodes", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "internet_facing": { "type": "boolean" },
+        "stores_customer_data": { "type": "boolean" },
+        "data_classification": { "type": "string", "enum": ["public", "internal", "confidential", "restricted"] },
+        "regulatory": { "type": "array", "items": { "type": "string" }, "description": "e.g. ['PCI-DSS','GDPR']" },
+        "environments": { "type": "array", "items": { "type": "string" } },
+        "third_party_access": { "type": "boolean" },
+        "uses_ai_workloads": { "type": "boolean" }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "service"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "service": {
+            "type": "string",
+            "description": "Azure service slug, e.g. 'front-door', 'app-gateway-waf', 'app-service', 'azure-sql', 'key-vault', 'storage-account', 'container-apps', 'entra-id', 'defender-for-cloud', 'azure-openai', 'private-endpoint', 'vnet', 'firewall', 'apim', 'aks', 'cosmos-db', 'service-bus', 'log-analytics'"
+          },
+          "label": { "type": "string" },
+          "zone": {
+            "type": "string",
+            "description": "Network/trust zone for diagram grouping, e.g. 'internet', 'edge', 'app', 'data', 'security', 'identity'"
+          },
+          "properties": {
+            "type": "object",
+            "description": "Security-relevant configuration the validation engine checks, e.g. {\"public_access\": false, \"https_only\": true, \"mfa_enabled\": true, \"firewall_enabled\": true, \"private_endpoint\": true, \"managed_identity\": true, \"tls_min_version\": \"1.2\"}",
+            "additionalProperties": true
+          },
+          "position": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": { "x": { "type": "number" }, "y": { "type": "number" } },
+            "description": "Optional React Flow position; auto-layout if omitted"
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "target"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "label": { "type": "string" },
+          "protocol": { "type": "string", "description": "e.g. 'https', 'tds', 'amqp'" },
+          "private": { "type": "boolean", "description": "true if traffic stays on private networking" }
+        }
+      }
+    }
+  }
+}

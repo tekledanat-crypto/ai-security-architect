@@ -1,0 +1,208 @@
+{
+  "$comment": "Consolidated control-equivalence index across frameworks. This is NOT a framework file (it does not follow framework.schema.json); it is validated by crosswalks.schema.json and consumed by the MCP crosswalk_control and compare_frameworks tools. Groups link controls that address the same security objective. Inline per-control crosswalks in the framework files are the authoritative source; this file is the denormalized, queryable index built from them plus additional equivalences.",
+  "version": "1.0",
+  "groups": [
+    {
+      "objective": "Multi-factor authentication for privileged access",
+      "domain": "Identity",
+      "controls": [
+        {"framework_id": "cis-azure", "control_id": "CIS-2.1.1"},
+        {"framework_id": "mcsb", "control_id": "IM-6"},
+        {"framework_id": "nist-800-53", "control_id": "IA-2(1)"},
+        {"framework_id": "iso-27001", "control_id": "A.5.17"},
+        {"framework_id": "nist-csf", "control_id": "PR.AA"},
+        {"framework_id": "soc2", "control_id": "CC6.1"},
+        {"framework_id": "owasp-web-top10", "control_id": "A07"},
+        {"framework_id": "mitre-attack-azure", "control_id": "T1078"}
+      ]
+    },
+    {
+      "objective": "Least privilege and privileged access management",
+      "domain": "Identity",
+      "controls": [
+        {"framework_id": "mcsb", "control_id": "PA-7"},
+        {"framework_id": "mcsb", "control_id": "PA-1"},
+        {"framework_id": "nist-800-53", "control_id": "AC-6"},
+        {"framework_id": "iso-27001", "control_id": "A.8.2"},
+        {"framework_id": "azure-waf", "control_id": "SE:05"},
+        {"framework_id": "cis-azure", "control_id": "CIS-8.6"}
+      ]
+    },
+    {
+      "objective": "Private connectivity for data services (no public exposure)",
+      "domain": "Network",
+      "controls": [
+        {"framework_id": "cis-azure", "control_id": "CIS-4.1.1"},
+        {"framework_id": "cis-azure", "control_id": "CIS-5.1.2"},
+        {"framework_id": "mcsb", "control_id": "NS-2"},
+        {"framework_id": "nist-800-53", "control_id": "SC-7"},
+        {"framework_id": "azure-waf", "control_id": "SE:06"},
+        {"framework_id": "mitre-attack-azure", "control_id": "T1530"}
+      ]
+    },
+    {
+      "objective": "Web application firewall / boundary protection at ingress",
+      "domain": "Network",
+      "controls": [
+        {"framework_id": "mcsb", "control_id": "NS-6"},
+        {"framework_id": "nist-800-53", "control_id": "SC-7"},
+        {"framework_id": "soc2", "control_id": "CC6.6"},
+        {"framework_id": "owasp-web-top10", "control_id": "A03"},
+        {"framework_id": "mitre-attack-azure", "control_id": "T1190"}
+      ]
+    },
+    {
+      "objective": "Encryption in transit (TLS 1.2+)",
+      "domain": "Data Protection",
+      "controls": [
+        {"framework_id": "cis-azure", "control_id": "CIS-9.2"},
+        {"framework_id": "cis-azure", "control_id": "CIS-9.10"},
+        {"framework_id": "mcsb", "control_id": "DP-3"},
+        {"framework_id": "nist-800-53", "control_id": "SC-8"},
+        {"framework_id": "iso-27001", "control_id": "A.8.24"},
+        {"framework_id": "soc2", "control_id": "CC6.7"},
+        {"framework_id": "owasp-web-top10", "control_id": "A02"},
+        {"framework_id": "azure-waf", "control_id": "SE:07"},
+        {"framework_id": "mitre-attack-azure", "control_id": "T1557"}
+      ]
+    },
+    {
+      "objective": "Encryption at rest",
+      "domain": "Data Protection",
+      "controls": [
+        {"framework_id": "cis-azure", "control_id": "CIS-5.2.1"},
+        {"framework_id": "mcsb", "control_id": "DP-4"},
+        {"framework_id": "nist-800-53", "control_id": "SC-13"},
+        {"framework_id": "nist-csf", "control_id": "PR.DS"},
+        {"framework_id": "azure-waf", "control_id": "SE:07"}
+      ]
+    },
+    {
+      "objective": "Secret and key management lifecycle",
+      "domain": "Data Protection",
+      "controls": [
+        {"framework_id": "cis-azure", "control_id": "CIS-8.1"},
+        {"framework_id": "cis-azure", "control_id": "CIS-8.4"},
+        {"framework_id": "mcsb", "control_id": "DP-8"},
+        {"framework_id": "nist-800-53", "control_id": "SC-12"},
+        {"framework_id": "nist-800-53", "control_id": "IA-5"},
+        {"framework_id": "iso-27001", "control_id": "A.8.24"},
+        {"framework_id": "mitre-attack-azure", "control_id": "T1552"}
+      ]
+    },
+    {
+      "objective": "Workload authentication via managed identity (no stored credentials)",
+      "domain": "Identity",
+      "controls": [
+        {"framework_id": "cis-azure", "control_id": "CIS-9.5"},
+        {"framework_id": "mcsb", "control_id": "IM-3"},
+        {"framework_id": "nist-800-53", "control_id": "IA-5"},
+        {"framework_id": "mitre-attack-azure", "control_id": "T1552"}
+      ]
+    },
+    {
+      "objective": "Centralized logging, monitoring, and threat detection",
+      "domain": "Logging",
+      "controls": [
+        {"framework_id": "cis-azure", "control_id": "CIS-3.1"},
+        {"framework_id": "mcsb", "control_id": "LT-1"},
+        {"framework_id": "mcsb", "control_id": "LT-3"},
+        {"framework_id": "nist-800-53", "control_id": "AU-2"},
+        {"framework_id": "nist-800-53", "control_id": "SI-4"},
+        {"framework_id": "nist-csf", "control_id": "DE.CM"},
+        {"framework_id": "iso-27001", "control_id": "A.8.16"},
+        {"framework_id": "soc2", "control_id": "CC7.2"},
+        {"framework_id": "owasp-web-top10", "control_id": "A09"},
+        {"framework_id": "azure-waf", "control_id": "SE:10"},
+        {"framework_id": "mitre-attack-azure", "control_id": "T1562.001"}
+      ]
+    },
+    {
+      "objective": "Backup, recovery, and destruction resilience",
+      "domain": "Resilience",
+      "controls": [
+        {"framework_id": "cis-azure", "control_id": "CIS-8.4"},
+        {"framework_id": "nist-800-53", "control_id": "CP-9"},
+        {"framework_id": "iso-27001", "control_id": "A.8.13"},
+        {"framework_id": "soc2", "control_id": "A1.2"},
+        {"framework_id": "nist-csf", "control_id": "RC.RP"},
+        {"framework_id": "mitre-attack-azure", "control_id": "T1485"}
+      ]
+    },
+    {
+      "objective": "Denial-of-service protection",
+      "domain": "Network",
+      "controls": [
+        {"framework_id": "mcsb", "control_id": "NS-5"},
+        {"framework_id": "nist-800-53", "control_id": "SC-5"},
+        {"framework_id": "owasp-api-top10", "control_id": "API4"},
+        {"framework_id": "owasp-llm-top10", "control_id": "LLM10"},
+        {"framework_id": "mitre-attack-azure", "control_id": "T1498"}
+      ]
+    },
+    {
+      "objective": "Vulnerability and patch management",
+      "domain": "Application Security",
+      "controls": [
+        {"framework_id": "nist-800-53", "control_id": "SI-2"},
+        {"framework_id": "owasp-web-top10", "control_id": "A06"},
+        {"framework_id": "soc2", "control_id": "CC7.1"},
+        {"framework_id": "owasp-llm-top10", "control_id": "LLM03"},
+        {"framework_id": "mitre-attack-azure", "control_id": "T1190"}
+      ]
+    },
+    {
+      "objective": "Secure change management and pipeline integrity",
+      "domain": "DevSecOps",
+      "controls": [
+        {"framework_id": "nist-800-53", "control_id": "CM-2"},
+        {"framework_id": "owasp-web-top10", "control_id": "A08"},
+        {"framework_id": "soc2", "control_id": "CC8.1"},
+        {"framework_id": "iso-27001", "control_id": "A.8.28"},
+        {"framework_id": "azure-waf", "control_id": "SE:11"}
+      ]
+    },
+    {
+      "objective": "Incident response readiness",
+      "domain": "Security Operations",
+      "controls": [
+        {"framework_id": "mcsb", "control_id": "IR-2"},
+        {"framework_id": "nist-800-53", "control_id": "IR-4"},
+        {"framework_id": "nist-csf", "control_id": "RS.MA"},
+        {"framework_id": "soc2", "control_id": "CC7.4"},
+        {"framework_id": "azure-waf", "control_id": "SE:12"}
+      ]
+    },
+    {
+      "objective": "LLM prompt injection and excessive agency defense",
+      "domain": "AI Security",
+      "controls": [
+        {"framework_id": "owasp-llm-top10", "control_id": "LLM01"},
+        {"framework_id": "owasp-llm-top10", "control_id": "LLM06"},
+        {"framework_id": "mitre-attack-azure", "control_id": "AML.T0051"},
+        {"framework_id": "mitre-attack-azure", "control_id": "AML.T0053"},
+        {"framework_id": "nist-800-53", "control_id": "AC-6"}
+      ]
+    },
+    {
+      "objective": "LLM sensitive data disclosure prevention",
+      "domain": "AI Security",
+      "controls": [
+        {"framework_id": "owasp-llm-top10", "control_id": "LLM02"},
+        {"framework_id": "owasp-llm-top10", "control_id": "LLM07"},
+        {"framework_id": "mitre-attack-azure", "control_id": "AML.T0057"},
+        {"framework_id": "nist-800-53", "control_id": "AC-3"}
+      ]
+    },
+    {
+      "objective": "API object and function level authorization",
+      "domain": "API Security",
+      "controls": [
+        {"framework_id": "owasp-api-top10", "control_id": "API1"},
+        {"framework_id": "owasp-api-top10", "control_id": "API5"},
+        {"framework_id": "nist-800-53", "control_id": "AC-3"},
+        {"framework_id": "owasp-web-top10", "control_id": "A01"}
+      ]
+    }
+  ]
+}

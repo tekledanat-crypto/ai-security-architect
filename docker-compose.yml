@@ -1,0 +1,51 @@
+# Full local stack. Services come online as their chunks are built:
+#   mcp-server → Chunk 3, backend → Chunk 4, frontend → Chunk 5.
+# Until then, `docker compose --profile db up` gives you the optional Postgres.
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend.Dockerfile
+    ports: ["3000:3000"]
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+    depends_on: [backend]
+    profiles: ["app"]   # remove profile once Chunk 5 lands
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend.Dockerfile
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      - MCP_SERVER_URL=http://mcp-server:8100/mcp
+    volumes:
+      - app-data:/app/data
+    depends_on: [mcp-server]
+    profiles: ["app"]   # remove profile once Chunk 4 lands
+
+  mcp-server:
+    build:
+      context: ./mcp-server
+      dockerfile: ../docker/mcp-server.Dockerfile
+    ports: ["8100:8100"]
+    volumes:
+      - ./frameworks:/app/frameworks:ro
+    profiles: ["app"]   # remove profile once Chunk 3 lands
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports: ["5432:5432"]
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    profiles: ["db"]
+
+volumes:
+  app-data:
+  pg-data:

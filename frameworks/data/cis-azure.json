@@ -1,0 +1,707 @@
+{
+  "framework_id": "cis-azure",
+  "name": "CIS Microsoft Azure Foundations Benchmark",
+  "version": "3.0",
+  "publisher": "Center for Internet Security",
+  "category": "cloud-benchmark",
+  "description": "Prescriptive hardening guidance for Microsoft Azure. Summaries are paraphrased; consult the CIS publication for authoritative text.",
+  "reference_url": "https://www.cisecurity.org/benchmark/azure",
+  "controls": [
+    {
+      "control_id": "CIS-2.1.1",
+      "title": "Require MFA for privileged users",
+      "summary": "All accounts holding administrative roles must sign in with multi-factor authentication to reduce account-takeover risk.",
+      "severity": "critical",
+      "domain": "Identity",
+      "azure_services": [
+        "entra-id"
+      ],
+      "check_hints": [
+        {
+          "target": "entra-id",
+          "property": "mfa_enabled",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "Administrator accounts are not protected by multi-factor authentication."
+        }
+      ],
+      "remediation": "Enable Entra ID MFA via Conditional Access targeting all privileged roles; prefer phishing-resistant methods (FIDO2).",
+      "stride": [
+        "spoofing",
+        "elevation-of-privilege"
+      ],
+      "attack_techniques": [
+        "T1078"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "IA-2(1)"
+        },
+        {
+          "framework_id": "iso-27001",
+          "control_id": "A.5.17"
+        },
+        {
+          "framework_id": "mcsb",
+          "control_id": "IM-6"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-2.1.2",
+      "title": "Require MFA for all users",
+      "summary": "Every user account, not only administrators, should authenticate with MFA.",
+      "severity": "high",
+      "domain": "Identity",
+      "azure_services": [
+        "entra-id"
+      ],
+      "check_hints": [
+        {
+          "target": "entra-id",
+          "property": "mfa_all_users",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "Standard user accounts can sign in without multi-factor authentication."
+        }
+      ],
+      "remediation": "Create a Conditional Access policy requiring MFA for all users on all cloud apps, with break-glass exclusions documented.",
+      "stride": [
+        "spoofing"
+      ],
+      "attack_techniques": [
+        "T1078",
+        "T1110"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "IA-2"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-2.3",
+      "title": "Block legacy authentication",
+      "summary": "Legacy protocols that cannot enforce MFA must be blocked tenant-wide.",
+      "severity": "high",
+      "domain": "Identity",
+      "azure_services": [
+        "entra-id"
+      ],
+      "check_hints": [
+        {
+          "target": "entra-id",
+          "property": "legacy_auth_blocked",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "Legacy authentication protocols are not blocked, allowing MFA bypass."
+        }
+      ],
+      "remediation": "Deploy a Conditional Access policy blocking legacy authentication clients for all users.",
+      "stride": [
+        "spoofing"
+      ],
+      "attack_techniques": [
+        "T1110.003"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "mcsb",
+          "control_id": "IM-6"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-2.6",
+      "title": "Restrict guest user access",
+      "summary": "Guest accounts should be reviewed regularly and granted the most limited directory permissions available.",
+      "severity": "medium",
+      "domain": "Identity",
+      "azure_services": [
+        "entra-id"
+      ],
+      "remediation": "Set guest user access restrictions to the most limited level and run periodic access reviews via Entra ID Governance.",
+      "stride": [
+        "elevation-of-privilege"
+      ],
+      "attack_techniques": [
+        "T1078.004"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "AC-2"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-3.1",
+      "title": "Enable Defender for Cloud on core resource types",
+      "summary": "Microsoft Defender for Cloud plans should be enabled for servers, App Service, databases, storage, containers, and Key Vault.",
+      "severity": "high",
+      "domain": "Security Operations",
+      "azure_services": [
+        "defender-for-cloud"
+      ],
+      "check_hints": [
+        {
+          "target": "architecture",
+          "condition": "service-present",
+          "value": "defender-for-cloud",
+          "fail_message": "Microsoft Defender for Cloud is not part of the architecture."
+        }
+      ],
+      "remediation": "Enable the relevant Defender for Cloud plans at subscription level and route alerts to your SIEM/SOC workflow.",
+      "stride": [
+        "tampering",
+        "information-disclosure"
+      ],
+      "attack_techniques": [
+        "T1562.001"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-csf",
+          "control_id": "DE.CM"
+        },
+        {
+          "framework_id": "mcsb",
+          "control_id": "LT-1"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-4.1.1",
+      "title": "Prohibit public network access to storage accounts",
+      "summary": "Storage accounts should not be reachable from the public internet without a documented business need.",
+      "severity": "high",
+      "domain": "Data Protection",
+      "azure_services": [
+        "storage-account"
+      ],
+      "check_hints": [
+        {
+          "target": "storage-account",
+          "property": "public_access",
+          "condition": "equals",
+          "value": false,
+          "fail_message": "Storage Account allows public network access."
+        },
+        {
+          "target": "storage-account",
+          "property": "private_endpoint",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "Storage Account is not accessed through a Private Endpoint."
+        }
+      ],
+      "remediation": "Disable public network access, add a Private Endpoint in the workload VNet, and resolve via Private DNS zones.",
+      "stride": [
+        "information-disclosure"
+      ],
+      "attack_techniques": [
+        "T1530"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "AC-3"
+        },
+        {
+          "framework_id": "mcsb",
+          "control_id": "NS-2"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-4.1.4",
+      "title": "Disable public blob access",
+      "summary": "Anonymous public read access to blob containers must be disabled at the account level.",
+      "severity": "critical",
+      "domain": "Data Protection",
+      "azure_services": [
+        "storage-account"
+      ],
+      "check_hints": [
+        {
+          "target": "storage-account",
+          "property": "allow_blob_public_access",
+          "condition": "not-equals",
+          "value": true,
+          "fail_message": "Anonymous public blob access is permitted on the Storage Account."
+        }
+      ],
+      "remediation": "Set 'Allow Blob public access' to Disabled on the storage account and audit existing containers for anonymous ACLs.",
+      "stride": [
+        "information-disclosure"
+      ],
+      "attack_techniques": [
+        "T1530"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "owasp-web-top10",
+          "control_id": "A01"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-4.2",
+      "title": "Require secure transfer and TLS 1.2+ for storage",
+      "summary": "Storage accounts must require HTTPS and a minimum TLS version of 1.2.",
+      "severity": "high",
+      "domain": "Data Protection",
+      "azure_services": [
+        "storage-account"
+      ],
+      "check_hints": [
+        {
+          "target": "storage-account",
+          "property": "https_only",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "Storage Account permits unencrypted transfer."
+        }
+      ],
+      "remediation": "Enable 'Secure transfer required' and set minimum TLS version to 1.2 on every storage account.",
+      "stride": [
+        "information-disclosure",
+        "tampering"
+      ],
+      "attack_techniques": [
+        "T1557"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "SC-8"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-5.1.1",
+      "title": "Enable SQL auditing",
+      "summary": "Auditing must be enabled on Azure SQL servers with retention of at least 90 days.",
+      "severity": "medium",
+      "domain": "Logging",
+      "azure_services": [
+        "azure-sql"
+      ],
+      "check_hints": [
+        {
+          "target": "azure-sql",
+          "property": "auditing_enabled",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "Azure SQL auditing is not enabled."
+        }
+      ],
+      "remediation": "Enable server-level auditing to a Log Analytics workspace or storage account with >=90 day retention.",
+      "stride": [
+        "repudiation"
+      ],
+      "attack_techniques": [
+        "T1070"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "AU-2"
+        },
+        {
+          "framework_id": "soc2",
+          "control_id": "CC7.2"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-5.1.2",
+      "title": "Deny public network access to Azure SQL",
+      "summary": "Azure SQL should be reachable only through private connectivity.",
+      "severity": "high",
+      "domain": "Network",
+      "azure_services": [
+        "azure-sql"
+      ],
+      "check_hints": [
+        {
+          "target": "azure-sql",
+          "property": "public_access",
+          "condition": "equals",
+          "value": false,
+          "fail_message": "Azure SQL server allows public network access."
+        },
+        {
+          "target": "azure-sql",
+          "property": "private_endpoint",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "Azure SQL is not connected via Private Endpoint."
+        }
+      ],
+      "remediation": "Set public network access to Deny and connect applications through a Private Endpoint.",
+      "stride": [
+        "information-disclosure"
+      ],
+      "attack_techniques": [
+        "T1190"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "mcsb",
+          "control_id": "NS-2"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-5.2.1",
+      "title": "Encrypt SQL data at rest with TDE",
+      "summary": "Transparent Data Encryption must be enabled; consider customer-managed keys for regulated data.",
+      "severity": "high",
+      "domain": "Data Protection",
+      "azure_services": [
+        "azure-sql"
+      ],
+      "check_hints": [
+        {
+          "target": "azure-sql",
+          "property": "tde_enabled",
+          "condition": "not-equals",
+          "value": false,
+          "fail_message": "Transparent Data Encryption is disabled on Azure SQL."
+        }
+      ],
+      "remediation": "Ensure TDE is enabled (default) and evaluate customer-managed keys in Key Vault for compliance-sensitive workloads.",
+      "stride": [
+        "information-disclosure"
+      ],
+      "attack_techniques": [
+        "T1005"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "SC-13"
+        },
+        {
+          "framework_id": "iso-27001",
+          "control_id": "A.8.24"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-6.1",
+      "title": "Restrict RDP/SSH from the internet",
+      "summary": "Management ports must never be exposed to the public internet.",
+      "severity": "critical",
+      "domain": "Network",
+      "azure_services": [
+        "vnet",
+        "firewall"
+      ],
+      "check_hints": [
+        {
+          "target": "architecture",
+          "property": "management_ports_public",
+          "condition": "not-equals",
+          "value": true,
+          "fail_message": "RDP/SSH management ports are exposed to the internet."
+        }
+      ],
+      "remediation": "Remove inbound NSG rules for 3389/22 from Internet; use Azure Bastion and Defender Just-In-Time VM access.",
+      "stride": [
+        "elevation-of-privilege",
+        "spoofing"
+      ],
+      "attack_techniques": [
+        "T1133",
+        "T1110"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "SC-7"
+        },
+        {
+          "framework_id": "mcsb",
+          "control_id": "NS-1"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-6.5",
+      "title": "Enable NSG flow logs / VNet flow logs",
+      "summary": "Network flow logging should be enabled and retained for investigation.",
+      "severity": "medium",
+      "domain": "Logging",
+      "azure_services": [
+        "vnet"
+      ],
+      "remediation": "Enable VNet flow logs to a storage account/Log Analytics with >=90 day retention and Traffic Analytics.",
+      "stride": [
+        "repudiation"
+      ],
+      "attack_techniques": [
+        "T1070"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "AU-2"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-7.4",
+      "title": "Enable Just-In-Time VM access",
+      "summary": "Management access to VMs should be time-bound and approved on demand.",
+      "severity": "medium",
+      "domain": "Compute",
+      "azure_services": [
+        "virtual-machine"
+      ],
+      "check_hints": [
+        {
+          "target": "virtual-machine",
+          "property": "jit_access",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "No Just-In-Time VM access is configured."
+        }
+      ],
+      "remediation": "Enable Defender for Servers JIT access so management ports open only for approved, time-limited sessions.",
+      "stride": [
+        "elevation-of-privilege"
+      ],
+      "attack_techniques": [
+        "T1021"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "AC-6"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-8.1",
+      "title": "Restrict Key Vault network access",
+      "summary": "Key Vaults must restrict access to trusted networks or private endpoints.",
+      "severity": "high",
+      "domain": "Data Protection",
+      "azure_services": [
+        "key-vault"
+      ],
+      "check_hints": [
+        {
+          "target": "key-vault",
+          "property": "firewall_enabled",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "Key Vault firewall is disabled; the vault is reachable from any network."
+        }
+      ],
+      "remediation": "Enable the Key Vault firewall, allow only required VNets, and add a Private Endpoint.",
+      "stride": [
+        "information-disclosure",
+        "tampering"
+      ],
+      "attack_techniques": [
+        "T1552"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "SC-12"
+        },
+        {
+          "framework_id": "mcsb",
+          "control_id": "DP-8"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-8.4",
+      "title": "Enable Key Vault purge protection",
+      "summary": "Soft-delete and purge protection prevent permanent destruction of keys and secrets by an attacker or mistake.",
+      "severity": "high",
+      "domain": "Data Protection",
+      "azure_services": [
+        "key-vault"
+      ],
+      "check_hints": [
+        {
+          "target": "key-vault",
+          "property": "purge_protection",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "Key Vault purge protection is not enabled."
+        }
+      ],
+      "remediation": "Enable soft-delete (default) and purge protection on all Key Vaults.",
+      "stride": [
+        "tampering",
+        "denial-of-service"
+      ],
+      "attack_techniques": [
+        "T1485"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "CP-9"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-8.6",
+      "title": "Use RBAC authorization for Key Vault",
+      "summary": "Prefer Azure RBAC over access policies for finer-grained, auditable vault permissions.",
+      "severity": "medium",
+      "domain": "Identity",
+      "azure_services": [
+        "key-vault"
+      ],
+      "remediation": "Migrate vaults to the RBAC permission model and assign least-privilege roles (e.g., Key Vault Secrets User).",
+      "stride": [
+        "elevation-of-privilege"
+      ],
+      "attack_techniques": [
+        "T1552.006"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "AC-6"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-9.2",
+      "title": "Enforce HTTPS-only on App Services",
+      "summary": "Web apps must redirect all HTTP traffic to HTTPS.",
+      "severity": "high",
+      "domain": "Network",
+      "azure_services": [
+        "app-service"
+      ],
+      "check_hints": [
+        {
+          "target": "app-service",
+          "property": "https_only",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "App Service accepts unencrypted HTTP traffic."
+        }
+      ],
+      "remediation": "Enable 'HTTPS Only', set minimum TLS to 1.2+, and emit HSTS headers.",
+      "stride": [
+        "information-disclosure",
+        "tampering"
+      ],
+      "attack_techniques": [
+        "T1557"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "owasp-web-top10",
+          "control_id": "A02"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-9.5",
+      "title": "Use Managed Identity for App Service",
+      "summary": "Applications should authenticate to Azure services with managed identities instead of embedded credentials.",
+      "severity": "high",
+      "domain": "Identity",
+      "azure_services": [
+        "app-service",
+        "container-apps"
+      ],
+      "check_hints": [
+        {
+          "target": "app-service",
+          "property": "managed_identity",
+          "condition": "equals",
+          "value": true,
+          "fail_message": "App Service does not use a Managed Identity; credentials may be embedded."
+        }
+      ],
+      "remediation": "Assign a system- or user-assigned managed identity and grant least-privilege RBAC to downstream resources; remove connection-string secrets.",
+      "stride": [
+        "spoofing",
+        "information-disclosure"
+      ],
+      "attack_techniques": [
+        "T1552.001"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "IA-5"
+        },
+        {
+          "framework_id": "mcsb",
+          "control_id": "IM-3"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-9.10",
+      "title": "Set minimum TLS version on App Service",
+      "summary": "App Services must reject TLS below 1.2.",
+      "severity": "medium",
+      "domain": "Network",
+      "azure_services": [
+        "app-service"
+      ],
+      "check_hints": [
+        {
+          "target": "app-service",
+          "property": "tls_min_version",
+          "condition": "equals",
+          "value": "1.2",
+          "fail_message": "App Service accepts TLS versions below 1.2."
+        }
+      ],
+      "remediation": "Set minimum inbound TLS version to 1.2 (or 1.3 where supported).",
+      "stride": [
+        "information-disclosure"
+      ],
+      "attack_techniques": [
+        "T1557"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "SC-8"
+        }
+      ]
+    },
+    {
+      "control_id": "CIS-10.1",
+      "title": "Require resource locks on critical resources",
+      "summary": "Critical production resources should carry delete locks to prevent accidental or malicious removal.",
+      "severity": "low",
+      "domain": "Governance",
+      "azure_services": [],
+      "remediation": "Apply CanNotDelete locks to production resource groups and critical resources; manage exceptions via change control.",
+      "stride": [
+        "tampering",
+        "denial-of-service"
+      ],
+      "attack_techniques": [
+        "T1485"
+      ],
+      "crosswalk": [
+        {
+          "framework_id": "nist-800-53",
+          "control_id": "CM-6"
+        }
+      ]
+    }
+  ]
+}

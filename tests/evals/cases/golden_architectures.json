@@ -1,0 +1,459 @@
+{
+  "$comment": "Golden evaluation cases. Each defines an architecture and the outcomes the deterministic engine MUST produce. These are the regression suite for the thing the product's credibility rests on: if scoring drifts, the build fails. Expectations are written as ranges/assertions rather than exact scores where the corpus may legitimately grow (adding controls changes absolute scores but not these invariants).",
+  "version": "1.0",
+  "cases": [
+    {
+      "id": "insecure-ecommerce",
+      "description": "A public ecommerce app with every data service exposed and no identity hardening. The canonical worst case.",
+      "architecture": {
+        "name": "Insecure Ecommerce",
+        "context": {
+          "internet_facing": true,
+          "stores_customer_data": true,
+          "regulatory": [
+            "PCI-DSS"
+          ]
+        },
+        "nodes": [
+          {
+            "id": "web",
+            "service": "app-service",
+            "properties": {
+              "https_only": false,
+              "managed_identity": false,
+              "tls_min_version": "1.0"
+            }
+          },
+          {
+            "id": "sql",
+            "service": "azure-sql",
+            "properties": {
+              "public_access": true,
+              "private_endpoint": false,
+              "auditing_enabled": false
+            }
+          },
+          {
+            "id": "store",
+            "service": "storage-account",
+            "properties": {
+              "public_access": true,
+              "allow_blob_public_access": true,
+              "https_only": false,
+              "private_endpoint": false
+            }
+          },
+          {
+            "id": "kv",
+            "service": "key-vault",
+            "properties": {
+              "firewall_enabled": false,
+              "purge_protection": false
+            }
+          },
+          {
+            "id": "entra",
+            "service": "entra-id",
+            "properties": {
+              "mfa_enabled": false,
+              "mfa_all_users": false
+            }
+          }
+        ],
+        "edges": [
+          {
+            "source": "web",
+            "target": "sql"
+          },
+          {
+            "source": "web",
+            "target": "store"
+          },
+          {
+            "source": "web",
+            "target": "kv"
+          }
+        ]
+      },
+      "expect": {
+        "score_max": 40,
+        "grade_in": [
+          "D",
+          "F"
+        ],
+        "min_critical_failures": 1,
+        "must_fail": [
+          "cis-azure:CIS-4.1.4",
+          "cis-azure:CIS-4.1.1",
+          "cis-azure:CIS-5.1.2",
+          "cis-azure:CIS-8.1",
+          "cis-azure:CIS-9.2",
+          "cis-azure:CIS-9.5",
+          "cis-azure:CIS-2.1.1"
+        ],
+        "must_pass": [],
+        "failed_nodes_include": [
+          "sql",
+          "store",
+          "kv",
+          "web",
+          "entra"
+        ]
+      }
+    },
+    {
+      "id": "hardened-ecommerce",
+      "description": "The same workload, remediated: private data plane, WAF at the edge, managed identity, MFA, monitoring.",
+      "architecture": {
+        "name": "Hardened Ecommerce",
+        "context": {
+          "internet_facing": true,
+          "stores_customer_data": true
+        },
+        "nodes": [
+          {
+            "id": "fd",
+            "service": "front-door"
+          },
+          {
+            "id": "waf",
+            "service": "app-gateway-waf"
+          },
+          {
+            "id": "web",
+            "service": "app-service",
+            "properties": {
+              "https_only": true,
+              "managed_identity": true,
+              "tls_min_version": "1.2"
+            }
+          },
+          {
+            "id": "sql",
+            "service": "azure-sql",
+            "properties": {
+              "public_access": false,
+              "private_endpoint": true,
+              "auditing_enabled": true,
+              "tde_enabled": true
+            }
+          },
+          {
+            "id": "store",
+            "service": "storage-account",
+            "properties": {
+              "public_access": false,
+              "allow_blob_public_access": false,
+              "https_only": true,
+              "private_endpoint": true
+            }
+          },
+          {
+            "id": "kv",
+            "service": "key-vault",
+            "properties": {
+              "firewall_enabled": true,
+              "purge_protection": true
+            }
+          },
+          {
+            "id": "entra",
+            "service": "entra-id",
+            "properties": {
+              "mfa_enabled": true,
+              "mfa_all_users": true,
+              "legacy_auth_blocked": true,
+              "pim_enabled": true
+            }
+          },
+          {
+            "id": "def",
+            "service": "defender-for-cloud"
+          },
+          {
+            "id": "log",
+            "service": "log-analytics"
+          },
+          {
+            "id": "vnet",
+            "service": "vnet"
+          },
+          {
+            "id": "pe",
+            "service": "private-endpoint"
+          }
+        ],
+        "edges": [
+          {
+            "source": "fd",
+            "target": "waf"
+          },
+          {
+            "source": "waf",
+            "target": "web"
+          },
+          {
+            "source": "web",
+            "target": "sql",
+            "private": true
+          },
+          {
+            "source": "web",
+            "target": "kv",
+            "private": true
+          }
+        ]
+      },
+      "expect": {
+        "score_min": 90,
+        "grade_in": [
+          "A"
+        ],
+        "max_critical_failures": 0,
+        "must_pass": [
+          "cis-azure:CIS-4.1.4",
+          "cis-azure:CIS-5.1.2",
+          "cis-azure:CIS-8.1",
+          "cis-azure:CIS-9.2",
+          "cis-azure:CIS-2.1.1"
+        ],
+        "must_fail": [],
+        "failed_nodes_include": []
+      }
+    },
+    {
+      "id": "unguarded-ai-workload",
+      "description": "An Azure OpenAI workload with no prompt-injection defense, no tool allow-list, no rate limiting. Exercises the AI-governance corpus (OWASP LLM Top 10 + ATLAS).",
+      "architecture": {
+        "name": "Unguarded AI Assistant",
+        "context": {
+          "internet_facing": true,
+          "uses_ai_workloads": true
+        },
+        "nodes": [
+          {
+            "id": "waf",
+            "service": "app-gateway-waf"
+          },
+          {
+            "id": "app",
+            "service": "container-apps",
+            "properties": {
+              "managed_identity": true
+            }
+          },
+          {
+            "id": "aoai",
+            "service": "azure-openai",
+            "properties": {
+              "input_filtering": false,
+              "tool_allowlist": false,
+              "rate_limited": false
+            }
+          },
+          {
+            "id": "entra",
+            "service": "entra-id",
+            "properties": {
+              "mfa_enabled": true,
+              "mfa_all_users": true,
+              "legacy_auth_blocked": true,
+              "pim_enabled": true
+            }
+          },
+          {
+            "id": "def",
+            "service": "defender-for-cloud"
+          },
+          {
+            "id": "log",
+            "service": "log-analytics"
+          }
+        ],
+        "edges": [
+          {
+            "source": "waf",
+            "target": "app"
+          },
+          {
+            "source": "app",
+            "target": "aoai"
+          }
+        ]
+      },
+      "expect": {
+        "score_max": 85,
+        "min_critical_failures": 1,
+        "must_fail": [
+          "owasp-llm-top10:LLM01",
+          "owasp-llm-top10:LLM06",
+          "owasp-llm-top10:LLM10"
+        ],
+        "must_pass": [
+          "cis-azure:CIS-2.1.1"
+        ],
+        "failed_nodes_include": [
+          "aoai"
+        ]
+      }
+    },
+    {
+      "id": "guarded-ai-workload",
+      "description": "The AI workload with guardrails AND the supporting security services a complete design needs (secret store, segmentation, private connectivity). Proves the LLM controls can be satisfied, not just failed.",
+      "architecture": {
+        "name": "Guarded AI Assistant",
+        "context": {
+          "internet_facing": true,
+          "uses_ai_workloads": true
+        },
+        "nodes": [
+          {
+            "id": "waf",
+            "service": "app-gateway-waf"
+          },
+          {
+            "id": "apim",
+            "service": "apim",
+            "properties": {
+              "rate_limited": true
+            }
+          },
+          {
+            "id": "app",
+            "service": "container-apps",
+            "properties": {
+              "managed_identity": true
+            }
+          },
+          {
+            "id": "aoai",
+            "service": "azure-openai",
+            "properties": {
+              "input_filtering": true,
+              "tool_allowlist": true,
+              "rate_limited": true
+            }
+          },
+          {
+            "id": "entra",
+            "service": "entra-id",
+            "properties": {
+              "mfa_enabled": true,
+              "mfa_all_users": true,
+              "legacy_auth_blocked": true,
+              "pim_enabled": true
+            }
+          },
+          {
+            "id": "def",
+            "service": "defender-for-cloud"
+          },
+          {
+            "id": "log",
+            "service": "log-analytics"
+          },
+          {
+            "id": "kv",
+            "service": "key-vault",
+            "properties": {
+              "firewall_enabled": true,
+              "purge_protection": true
+            }
+          },
+          {
+            "id": "vnet",
+            "service": "vnet"
+          },
+          {
+            "id": "pe",
+            "service": "private-endpoint"
+          }
+        ],
+        "edges": [
+          {
+            "source": "waf",
+            "target": "apim"
+          },
+          {
+            "source": "apim",
+            "target": "app"
+          },
+          {
+            "source": "app",
+            "target": "aoai"
+          },
+          {
+            "source": "app",
+            "target": "kv",
+            "private": true
+          }
+        ]
+      },
+      "expect": {
+        "score_min": 90,
+        "max_critical_failures": 0,
+        "must_pass": [
+          "owasp-llm-top10:LLM01",
+          "owasp-llm-top10:LLM06",
+          "owasp-llm-top10:LLM10"
+        ],
+        "must_fail": [],
+        "failed_nodes_include": []
+      }
+    },
+    {
+      "id": "empty-canvas",
+      "description": "An empty design must not be scored at all \u2014 a blank canvas is not 'compliant', it's unassessable. Guards the regression fixed in Chunk 3.",
+      "architecture": {
+        "name": "Empty",
+        "nodes": [],
+        "edges": []
+      },
+      "expect": {
+        "score_min": 100,
+        "max_critical_failures": 0,
+        "max_total_findings": 0,
+        "must_fail": [],
+        "must_pass": [],
+        "failed_nodes_include": []
+      }
+    },
+    {
+      "id": "storage-only-scoping",
+      "description": "A single hardened storage account. Proves two things: (1) storage controls are evaluated and pass; (2) SQL/Key-Vault PROPERTY controls are not assessed at all. Architecture-wide PRESENCE controls DO correctly fire (no WAF, no Defender, no secret store) \u2014 a fragment is not a complete design, and the engine says so.",
+      "architecture": {
+        "name": "Storage Only",
+        "nodes": [
+          {
+            "id": "s",
+            "service": "storage-account",
+            "properties": {
+              "public_access": false,
+              "allow_blob_public_access": false,
+              "https_only": true,
+              "private_endpoint": true
+            }
+          }
+        ],
+        "edges": []
+      },
+      "expect": {
+        "must_pass": [
+          "cis-azure:CIS-4.1.4",
+          "cis-azure:CIS-4.1.1",
+          "cis-azure:CIS-4.2"
+        ],
+        "must_fail": [
+          "mcsb:NS-6",
+          "cis-azure:CIS-3.1"
+        ],
+        "must_not_assess_prefixes": [
+          "cis-azure:CIS-5.1",
+          "cis-azure:CIS-8.",
+          "cis-azure:CIS-9."
+        ],
+        "failed_nodes_include": []
+      }
+    }
+  ]
+}

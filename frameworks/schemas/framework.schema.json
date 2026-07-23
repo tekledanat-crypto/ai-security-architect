@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-security-architect/schemas/framework.schema.json",
+  "title": "Compliance Framework",
+  "type": "object",
+  "required": ["framework_id", "name", "version", "category", "controls"],
+  "additionalProperties": false,
+  "properties": {
+    "framework_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Stable machine ID, e.g. 'cis-azure'"
+    },
+    "name": { "type": "string" },
+    "version": { "type": "string", "description": "Version of the source framework this data reflects" },
+    "publisher": { "type": "string" },
+    "category": {
+      "type": "string",
+      "enum": ["cloud-benchmark", "regulatory", "standard", "threat-model", "best-practice", "ai-governance"]
+    },
+    "description": { "type": "string" },
+    "reference_url": { "type": "string", "format": "uri" },
+    "controls": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/control" }
+    }
+  },
+  "$defs": {
+    "control": {
+      "type": "object",
+      "required": ["control_id", "title", "summary", "severity", "remediation"],
+      "additionalProperties": false,
+      "properties": {
+        "control_id": {
+          "type": "string",
+          "description": "ID within the framework, e.g. 'CIS-3.1', 'AC-2', 'LLM01'"
+        },
+        "title": { "type": "string" },
+        "summary": {
+          "type": "string",
+          "description": "Paraphrased plain-English summary. Never verbatim source text."
+        },
+        "severity": { "type": "string", "enum": ["critical", "high", "medium", "low", "informational"] },
+        "domain": {
+          "type": "string",
+          "description": "Grouping, e.g. 'Identity', 'Network', 'Data Protection', 'Logging'"
+        },
+        "azure_services": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Azure service slugs this control applies to, e.g. 'storage-account', 'key-vault', 'app-service'. Empty/omitted = applies globally."
+        },
+        "check_hints": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/check_hint" },
+          "description": "Machine-evaluable conditions the validation engine tests against architecture JSON"
+        },
+        "remediation": {
+          "type": "string",
+          "description": "Concrete Azure remediation steps in plain English"
+        },
+        "stride": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["spoofing", "tampering", "repudiation", "information-disclosure", "denial-of-service", "elevation-of-privilege"] }
+        },
+        "attack_techniques": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^(T|AML\\.T)[0-9.]+$" },
+          "description": "MITRE ATT&CK (Txxxx) or ATLAS (AML.Txxxx) technique IDs"
+        },
+        "references": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "crosswalk": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["framework_id", "control_id"],
+            "additionalProperties": false,
+            "properties": {
+              "framework_id": { "type": "string" },
+              "control_id": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "check_hint": {
+      "type": "object",
+      "required": ["target", "condition"],
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "Service slug the check applies to, or 'architecture' for global checks"
+        },
+        "property": {
+          "type": "string",
+          "description": "Property path in the architecture node's properties, e.g. 'public_access', 'mfa_enabled'"
+        },
+        "condition": {
+          "type": "string",
+          "enum": ["equals", "not-equals", "exists", "not-exists", "contains", "service-present", "service-absent", "edge-exists", "edge-absent"]
+        },
+        "value": {},
+        "fail_message": {
+          "type": "string",
+          "description": "Plain-English finding text when the check fails"
+        }
+      }
+    }
+  }
+}

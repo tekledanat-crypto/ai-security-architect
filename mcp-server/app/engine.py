@@ -16,7 +16,7 @@ from __future__ import annotations
 from typing import Optional
 
 from .models import (
-    Architecture, ArchNode, AssessmentResult, CheckHint,
+    Architecture, AssessmentResult, CheckHint,
     Control, Finding, FrameworkScore,
 )
 from .repository import FrameworkRepository

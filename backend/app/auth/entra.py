@@ -29,7 +29,7 @@ import httpx
 import jwt
 from jwt import PyJWKClient
 
-from ..config import Settings, get_settings
+from ..config import Settings
 from .provider import AuthProvider, Principal, Role
 
 log = logging.getLogger(__name__)

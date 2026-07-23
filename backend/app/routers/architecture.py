@@ -15,7 +15,7 @@ from ..ai.mcp_client import MCPClient
 from ..auth.provider import Principal
 from ..db.models import Architecture, Assessment, Conversation, Finding, User
 from ..db.session import get_session
-from ..deps import current_principal, mcp_client_dep, require_permission
+from ..deps import mcp_client_dep, require_permission
 
 router = APIRouter(prefix="/api/architecture", tags=["architecture"])
 
